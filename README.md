@@ -1,7 +1,7 @@
 
 <div align="center">
 
-<img src="docs/assets/8dots-banner.png" width="100%" alt="8DoTs - Software Energy Profiling"/>
+<img src="docs/a8DoTs_ Energy-Aware Software Engineering.png" width="100%" alt="8DoTs - Software Energy Profiling"/>
 
 <br/>
 
@@ -435,7 +435,7 @@ Credit for upstream work belongs to the original project and its contributors.
 
 <div align="center">
 
-<img src="docs/assets/8dots-banner.png" width="100%" alt="8DoTs"/>
+<img src="docs/8DoTs_ Energy-Aware Software Engineering.png" width="100%" alt="8DoTs"/>
 
 # 8DoTs
 
