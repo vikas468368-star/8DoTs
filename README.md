@@ -1,22 +1,20 @@
 
 <div align="center">
 
+<img src="docs/assets/8dots-banner.png" width="100%" alt="8DoTs - Software Energy Profiling"/>
+
+<br/>
+
 # 8DoTs
 
-### THE ENERGY LAYER FOR SOFTWARE ENGINEERING.
+### THE ENERGY LAYER FOR SOFTWARE ENGINEERING
 
-**Your code has a performance cost. It also has an energy cost.**
+**Measure Beyond Time. Build Beyond Performance.**
 
-Measure what traditional profilers overlook.
-
-<br/>
-
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Linux](https://img.shields.io/badge/Linux-Supported-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://kernel.org)
-[![Green Software](https://img.shields.io/badge/Green-Software-16A34A?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)
-
-<br/>
+[![Python](https://img.shields.io/badge/Python-3.9%2B-00D26A?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Linux](https://img.shields.io/badge/Linux-Supported-00D26A?style=for-the-badge&logo=linux&logoColor=white)](https://kernel.org)
+[![Green Software](https://img.shields.io/badge/Green-Software-00D26A?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/License-MIT-00D26A?style=for-the-badge)](LICENSE)
 
 **MEASURE → ANALYZE → COMPARE → OPTIMIZE**
 
@@ -24,47 +22,53 @@ Measure what traditional profilers overlook.
 
 ---
 
-## ◈ The idea behind 8DoTs
+## 01. The Vision
 
-> What if we could measure software quality not only by how fast code runs, but also by how much energy it consumes?
+### What if we measured software quality beyond execution time?
 
-Developers already measure execution time, CPU usage and memory consumption. But energy consumption often remains invisible.
+Modern software development focuses heavily on speed, CPU utilization and memory consumption. But there is another important factor that often goes unnoticed:
 
-Two programs can complete the same task in the same amount of time while consuming different amounts of energy.
+**Energy Consumption.**
 
-**8DoTs makes that hidden cost measurable.**
+Two programs can perform the same task in similar execution times while consuming significantly different amounts of energy.
 
-It is a Linux-based software energy profiling toolkit that uses hardware energy counters, controlled workload execution, thermal monitoring and statistical analysis to help developers understand the energy behaviour of their applications.
+Traditional profiling tools do not always reveal this difference.
+
+**8DoTs** is a Linux-based software energy profiling toolkit designed to make software energy consumption measurable, understandable and actionable.
+
+Our mission is to bring energy awareness into everyday software engineering.
 
 ---
 
-## ◈ The problem we wanted to solve
+## 02. The Problem We Solve
 
-| The overlooked problem | What 8DoTs brings |
+| Engineering Challenge | 8DoTs Approach |
 |---|---|
-| Energy consumption is invisible | Hardware-based energy measurement |
-| Fast code isn't always energy-efficient | Energy and execution-time analysis |
-| Background activity distorts results | Idle baseline correction |
-| Single measurements can mislead | Repeated runs and statistical confidence |
-| Heat can affect performance | Thermal monitoring |
-| Code changes can increase energy usage | A/B comparison and CI energy gates |
-| Uncontrolled workloads waste resources | Timeouts and process cleanup |
+| Invisible energy consumption | Hardware-based energy measurement |
+| Misleading performance comparisons | Energy and execution-time analysis |
+| Background system noise | Idle baseline correction |
+| Unreliable single-run results | Repeated execution and statistical analysis |
+| CPU thermal behaviour | Thermal monitoring |
+| Uncontrolled workloads | Timeout and process cleanup |
+| Energy regressions | A/B comparison and CI energy gates |
+| Difficult environmental impact estimation | Optional electricity and CO₂ estimation |
 
-**The bigger goal:** Bring energy awareness into everyday software development.
+> We believe software should not only be fast. It should also be energy-efficient.
 
 ---
 
-## ◈ Inside the architecture
+## 03. System Architecture
 
-The journey of a workload through 8DoTs:
+The complete journey from workload execution to actionable energy insights.
 
 ```mermaid
 flowchart TD
     A(["DEVELOPER / WORKLOAD"]) --> B["CLI INTERFACE"]
+
     B --> C["MEASUREMENT ENGINE"]
 
     C --> D["IDLE BASELINE"]
-    D --> E["WARM-UP"]
+    D --> E["WARM-UP EXECUTION"]
     E --> F["REPEATED EXECUTION"]
 
     F --> G["RAPL ENERGY READER"]
@@ -75,70 +79,74 @@ flowchart TD
     H --> J
     I --> J
 
-    J --> K["STATISTICAL ANALYSIS"]
-    K --> L["ENERGY & POWER CALCULATION"]
+    J --> K["ENERGY & POWER CALCULATION"]
+    K --> L["STATISTICAL ANALYSIS"]
 
     L --> M["REPORTING ENGINE"]
 
-    M --> N["TERMINAL"]
-    M --> O["JSON / CSV"]
+    M --> N["TERMINAL REPORT"]
+    M --> O["JSON / CSV EXPORT"]
     M --> P["A/B COMPARISON"]
     M --> Q["CI ENERGY GATES"]
 
-    P --> R(["OPTIMIZATION"])
+    P --> R(["CODE OPTIMIZATION"])
     Q --> R
 
-    style A fill:#172554,color:#fff,stroke:#3B82F6
-    style R fill:#14532D,color:#fff,stroke:#22C55E
-    style J fill:#312E81,color:#fff,stroke:#818CF8
-    style M fill:#312E81,color:#fff,stroke:#818CF8
+    style A fill:#052e16,color:#fff,stroke:#22c55e
+    style R fill:#052e16,color:#fff,stroke:#22c55e
+    style J fill:#064e3b,color:#fff,stroke:#34d399
+    style M fill:#064e3b,color:#fff,stroke:#34d399
 ```
 
-### How the system thinks
+### Architecture Breakdown
 
-| Layer | What happens |
+| Layer | Responsibility |
 |---|---|
-| 01 — Interface | Developer submits a workload through the CLI |
-| 02 — Preparation | System checks hardware and captures idle baseline |
-| 03 — Execution | Workload is warmed up and executed repeatedly |
-| 04 — Observation | Energy counters, thermal data and process information are collected |
-| 05 — Intelligence | Energy calculations and statistical analysis are performed |
-| 06 — Decisions | Results are compared, exported and evaluated for regressions |
+| CLI Layer | Accepts profiling commands and parameters |
+| Measurement Engine | Controls workload execution |
+| Energy Reader | Collects RAPL/Powercap readings |
+| Thermal Monitor | Observes CPU temperature |
+| Process Manager | Handles timeouts and cleanup |
+| Analysis Engine | Calculates energy and power |
+| Statistical Engine | Evaluates measurement reliability |
+| Comparison Engine | Compares implementations |
+| CI Engine | Detects energy regressions |
+| Reporting Engine | Generates structured reports |
 
 ---
 
-## ◈ The modules that power it
+## 04. The Technology Behind 8DoTs
 
 <details>
-<summary><strong>01 / Energy Measurement Engine</strong></summary>
+<summary><strong>01 — Energy Measurement Engine</strong></summary>
 
-Reads RAPL/Powercap hardware energy counters.
+Uses Linux RAPL/Powercap interfaces to collect hardware energy readings.
 
 - Energy counter discovery
 - Energy delta calculation
 - Counter wraparound handling
-- Joule-based measurements
+- Joule-based measurement
 
 </details>
 
 <details>
-<summary><strong>02 / Baseline Engine</strong></summary>
+<summary><strong>02 — Baseline Correction Engine</strong></summary>
 
-Measures idle energy to account for background system consumption.
+Measures idle energy before workload execution to account for background system consumption.
 
 - Idle energy measurement
 - Baseline correction
-- More meaningful workload estimates
+- Workload energy estimation
 
 </details>
 
 <details>
-<summary><strong>03 / Execution Engine</strong></summary>
+<summary><strong>03 — Workload Execution Engine</strong></summary>
 
-Controls how workloads are executed.
+Provides controlled execution of software workloads.
 
 - Warm-up execution
-- Repeated measurements
+- Repeated execution
 - Timeout handling
 - Process isolation
 - Child-process cleanup
@@ -146,153 +154,85 @@ Controls how workloads are executed.
 </details>
 
 <details>
-<summary><strong>04 / Thermal Intelligence</strong></summary>
+<summary><strong>04 — Thermal Intelligence Engine</strong></summary>
 
-Observes the thermal behaviour of the system.
+Collects CPU thermal information to understand system behaviour.
 
-- CPU temperature readings
-- Baseline and peak temperature
+- Baseline temperature
+- Average temperature
+- Peak temperature
 - Temperature variation
 - Possible thermal throttling indicators
 
 </details>
 
 <details>
-<summary><strong>05 / Statistical Engine</strong></summary>
+<summary><strong>05 — Statistical Analysis Engine</strong></summary>
 
-Evaluates how consistent the measurements are.
+Evaluates the reliability and consistency of measurements.
 
-- Mean energy
+- Mean energy consumption
 - Standard deviation
-- Coefficient of Variation
+- Coefficient of Variation (CoV)
 - Confidence classification
 
 </details>
 
 <details>
-<summary><strong>06 / Comparison & CI Engine</strong></summary>
+<summary><strong>06 — Comparison & CI Engine</strong></summary>
 
-Helps developers identify energy regressions.
+Helps developers identify energy regressions between implementations.
 
 - Before/after comparison
 - Baseline storage
-- Energy regression thresholds
+- Regression thresholds
 - CI energy gates
 
 </details>
 
 <details>
-<summary><strong>07 / Reporting Engine</strong></summary>
+<summary><strong>07 — Reporting Engine</strong></summary>
 
-Transforms raw measurements into understandable results.
+Transforms collected measurements into understandable reports.
 
 - Terminal reports
 - JSON exports
 - CSV exports
-- Optional cost and carbon estimates
+- Optional electricity-cost estimates
+- Optional carbon-impact estimates
 
 </details>
 
 ---
 
-## ◈ From code to energy intelligence
+## 05. Key Features
 
-A typical 8DoTs workflow:
+<div align="center">
 
-```text
-   YOUR CODE
-       |
-       v
-   SYSTEM CHECK
-       |
-       v
-   IDLE BASELINE
-       |
-       v
-   WARM-UP
-       |
-       v
-   REPEATED EXECUTION
-       |
-       v
-   ENERGY + THERMAL DATA
-       |
-       v
-   STATISTICAL ANALYSIS
-       |
-       v
-   FINAL ENERGY REPORT
-       |
-       v
-   OPTIMIZE YOUR CODE
-```
+| FEATURE | CAPABILITY |
+|:---:|---|
+| ⚡ | Hardware Energy Measurement |
+| 📊 | Statistical Confidence Analysis |
+| 🌡️ | CPU Thermal Monitoring |
+| 🔬 | Idle Baseline Correction |
+| 🔄 | Repeated Workload Execution |
+| ⚖️ | A/B Implementation Comparison |
+| 🛡️ | Process Timeout & Cleanup |
+| 🚦 | CI Energy Regression Gates |
+| 📁 | JSON & CSV Reporting |
+| 🌱 | Optional Cost & Carbon Estimation |
+
+</div>
 
 ---
 
-## ◈ Get started
+## 06. Inside an Energy Report
 
-### Requirements
-
-- Linux-based bare-metal machine
-- Python 3.9+
-- Supported RAPL/Powercap hardware interface
-- Appropriate hardware-counter permissions
-
-### Installation
-
-```bash
-git clone https://github.com/vikas468368-star/8DoTs.git
-
-cd 8DoTs
-
-python3 -m venv .venv
-
-source .venv/bin/activate
-
-python -m pip install --upgrade pip
-
-python -m pip install -e ".[test]"
-```
-
-### Check your system
-
-```bash
-python -m dol8.cli doctor
-```
-
-### Profile a workload
-
-```bash
-python -m dol8.cli run workload.py --runs 5
-```
-
-### Compare implementations
-
-```bash
-python -m dol8.cli compare before.py after.py --runs 5
-```
-
-### Export a report
-
-```bash
-python -m dol8.cli run workload.py --runs 5 --json results.json
-```
-
-### Run tests
-
-```bash
-python -m pytest
-```
-
----
-
-## ◈ What does an energy report tell us?
-
-An illustrative report:
+An illustrative example of the information generated by 8DoTs:
 
 ```text
 ╔══════════════════════════════════════╗
-║           8DoTs REPORT               ║
+║             8DoTs REPORT             ║
 ╠══════════════════════════════════════╣
 ║ Workload       : workload.py         ║
 ║ Execution Time : 2.099 seconds       ║
@@ -300,106 +240,211 @@ An illustrative report:
 ║ Average Power  : 5.857 Watts         ║
 ║ Peak Power     : 18.960 Watts        ║
 ╠══════════════════════════════════════╣
-║ Thermal Analysis                     ║
+║ THERMAL ANALYSIS                     ║
 ║ Baseline       : 60.3 C              ║
 ║ Peak           : 60.6 C              ║
-╠══════════════════════════════════════╣
-║ Measurement Confidence                ║
+║                                      ║
+║ MEASUREMENT CONFIDENCE               ║
 ║ Runs           : 3                   ║
 ║ CoV            : 1.36%               ║
 ║ Confidence     : HIGH                ║
 ╚══════════════════════════════════════╝
 ```
 
-*Illustrative values, not a benchmark guarantee.*
+*Illustrative values only, not actual benchmark results.*
 
 ---
 
-## ◈ Built with
+## 07. Technology Stack
 
 <div align="center">
 
-| TECHNOLOGY | ROLE |
+| TECHNOLOGY | PURPOSE |
 |:---:|---|
 | Python | Core profiling engine |
-| Linux | System-level measurements |
+| Linux | Hardware measurement environment |
 | RAPL / Powercap | Hardware energy counters |
-| psutil | Process monitoring |
-| pytest | Testing and verification |
-| JSON / CSV | Data and reporting |
+| Linux Thermal Interfaces | Temperature monitoring |
+| psutil | Process and system information |
+| pytest | Automated testing |
+| JSON | Structured reporting |
+| CSV | Measurement data export |
 
 </div>
 
 ---
 
-## ◈ Engineering principles
+## 08. Get Started
+
+### System Requirements
+
+- Linux-based bare-metal machine.
+- Python 3.9 or higher.
+- Supported Intel or AMD hardware exposing RAPL/Powercap interfaces.
+- Appropriate permissions for hardware energy counter access.
+
+### Installation
+
+**Step 1 — Clone the repository**
+
+```bash
+git clone https://github.com/vikas468368-star/8DoTs.git
+
+cd 8DoTs
+```
+
+**Step 2 — Create a virtual environment**
+
+```bash
+python3 -m venv .venv
+
+source .venv/bin/activate
+```
+
+**Step 3 — Install dependencies**
+
+```bash
+python -m pip install --upgrade pip
+
+python -m pip install -e ".[test]"
+```
+
+**Step 4 — Check system readiness**
+
+```bash
+python -m dol8.cli doctor
+```
+
+### Start Profiling
+
+```bash
+python -m dol8.cli run workload.py --runs 5
+```
+
+### Compare Implementations
+
+```bash
+python -m dol8.cli compare before.py after.py --runs 5
+```
+
+### Export Results
+
+```bash
+python -m dol8.cli run workload.py --runs 5 --json results.json
+```
+
+### Run Tests
+
+```bash
+python -m pytest
+```
+
+---
+
+## 09. Engineering Principles
 
 **Accuracy over assumptions**
 
-Hardware measurements and statistical confidence matter more than impressive-looking numbers.
+We prioritize hardware measurements and statistical reliability.
 
 **Transparency over misleading claims**
 
-RAPL measures hardware energy domains, not exact per-process energy.
+Hardware energy measurements are not presented as exact per-process energy attribution.
 
-**Repeatability over one-time results**
+**Repeatability over single-run results**
 
-Controlled execution and repeated measurements help reduce noise.
+Repeated executions help identify measurement variability.
 
 **Sustainability alongside performance**
 
-Energy efficiency deserves a place in software quality engineering.
+Energy efficiency deserves to be considered a part of software quality.
 
 ---
 
-## ◈ Known limitations
+## 10. Known Limitations
 
 - Hardware energy measurement requires supported RAPL/Powercap interfaces.
-- Background processes can affect measurements.
-- Hardware-level energy readings are not exact process-level attribution.
-- Thermal behaviour depends on hardware and environmental conditions.
-- Reliable comparisons should use consistent hardware and operating conditions.
+- Background processes may influence measurements.
+- Hardware-domain energy readings are not exact individual-process attribution.
+- Thermal measurements depend on hardware and environmental conditions.
+- Reliable comparisons require consistent hardware and execution conditions.
+- Virtualized environments may not expose physical energy counters.
 
 ---
 
-## ◈ What's next?
+## 11. Future Roadmap
 
-Our potential development roadmap:
+Our potential development directions:
 
-- [ ] Enhanced GPU and accelerator energy support
-- [ ] Advanced visualization dashboard
-- [ ] Improved real-time energy monitoring
-- [ ] More detailed resource-to-energy correlation
+- [ ] Enhanced GPU and accelerator energy measurement
+- [ ] Advanced energy visualization dashboard
+- [ ] Real-time energy monitoring
+- [ ] Improved resource-to-energy correlation
 - [ ] Extended CI/CD integrations
 - [ ] Broader hardware compatibility
-- [ ] More advanced energy regression analysis
+- [ ] Advanced energy regression analytics
 
 ---
 
-## ◈ Why it matters
+## 12. Why 8DoTs Matters
 
 The future of software engineering is not only about building faster applications.
 
-It is also about building applications that use resources responsibly.
+It is about building applications that use computational resources responsibly.
 
 8DoTs explores how energy measurement can become a practical part of the software development lifecycle.
 
-**Because performance should not be measured in seconds alone.**
+**Our vision is to make energy efficiency measurable, understandable and actionable.**
+
+---
+
+## 13. Contributing
+
+We welcome contributions, ideas and improvements.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Implement your changes.
+4. Add or update tests.
+5. Run the test suite.
+6. Submit a pull request.
+
+```bash
+python -m pytest
+```
+
+---
+
+## 14. License
+
+This project is distributed under the MIT License.
+
+See [LICENSE](LICENSE) for details.
+
+---
+
+## 15. Acknowledgements
+
+This repository is a fork of the original project:
+
+[uyg7x/8DoTs](https://github.com/uyg7x/8DoTs)
+
+Credit for upstream work belongs to the original project and its contributors.
 
 ---
 
 <div align="center">
 
+<img src="docs/assets/8dots-banner.png" width="100%" alt="8DoTs"/>
+
 # 8DoTs
 
 ### MEASURE BEYOND TIME.
 
-**BUILD BEYOND PERFORMANCE.**
+### BUILD BEYOND PERFORMANCE.
 
-[GitHub Repository](https://github.com/vikas468368-star/8DoTs)
+**An exploration of energy-aware and sustainable software engineering.**
 
-<br/>
-
-*An open-source exploration of energy-aware and sustainable software engineering.*
+[Explore Repository](https://github.com/vikas468368-star/8DoTs)
 
 </div>
