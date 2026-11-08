@@ -1,219 +1,581 @@
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20bare--metal-lightgrey)
-<div align="center">
-  <pre style="font-family: monospace; font-size: 1.3em; line-height: 1.2; margin: 0;">
-    <span style="color: orange;">
-██▀▀▀▄  ▄▀▀▀▀▄  █
-██   █  █    █  █
-    ██▄▄▄▀  ▀▄▄▄▄▀  █▄▄▄▀
-    </span>
-    <span style="color: #32CD32;">
-     ▄▀▀▀▀▄
-    █    █
-    ▀▄▄▄▄▀
-    █    █
-     ▀▄▄▄▄▀
-    </span>
-  </pre>
-</div>
 
+# 8DoTs — Software Energy Profiling & Optimization
 
+<p align="center">
+  <strong>Measure Beyond Time. Build Beyond Performance.</strong>
+  <br />
+  A Linux-based software energy profiling toolkit.
+</p>
 
-8DoTs (internally structured as the `dol8` Python package) is a command-line profiling tool designed to make energy consumption visible during software development. While execution time has always been a standard metric, energy use has remained largely invisible. 8DoTs reads hardware energy counters (RAPL - Running Average Power Limit) and thermal sensors directly from the Linux kernel to provide repeatable, high-resolution estimates of how much energy a specific workload consumes, how much heat it generates, and whether it triggers thermal throttling.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9%2B-blue" />
+  <img src="https://img.shields.io/badge/Platform-Linux-green" />
+  <img src="https://img.shields.io/badge/Domain-Green%20Software-success" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow" />
+</p>
 
-## Requirements
+---
 
-Before installing, ensure your environment meets these strict hardware and software requirements:
-- **Operating System**: Bare-metal Linux (e.g., Ubuntu, Linux Mint). 
-- **Hardware**: Intel or AMD CPU that exposes RAPL counters through the Linux `powercap` interface.
-- **Software**: Python 3.9 or higher.
-- **Unsupported Environments**: Virtual machines (VMs) and Windows Subsystem for Linux (WSL2) are **not supported** for energy profiling, as hypervisors hide the physical hardware counters. (You can still run the test suite on these platforms, but profiling commands will report RAPL as unavailable).
+## 1. Introduction
 
-## Table of Contents
+**8DoTs** (internally structured as the `dol8` Python package) is a Linux command-line tool designed to measure, analyze, and compare the energy consumption of software workloads.
 
-1. [The Problems It Solves](#the-problems-it-solves)
-2. [Key Features](#key-features)
-3. [Quick Start](#quick-start)
-4. [Example Output](#example-output)
-5. [How It Works](#how-it-works)
-6. [Using the CLI in Workflows](#using-the-cli-in-workflows)
-7. [Future Vision](#future-vision)
-8. [Limitations, Honesty, and Solutions](#limitations-honesty-and-solutions)
-9. [How to Contribute](#how-to-contribute)
+Traditional software profiling focuses primarily on execution time, CPU utilization, and memory consumption. However, these metrics do not necessarily reveal how much electrical energy an application consumes.
 
-## The Problems It Solves
+8DoTs addresses this gap by using hardware energy counters (RAPL/Powercap) and Linux thermal interfaces to produce repeatable, high-resolution estimates of software energy consumption.
 
-1. **Invisible Energy Costs**: Two programs with identical execution times can differ drastically in energy consumption. 8DoTs exposes this hidden metric, proving that speed is not the same as efficiency.
-2. **Silent Thermal Throttling**: Overheated processors silently reduce their frequency to manage heat, causing mysterious performance degradation without throwing errors. 8DoTs detects and reports these events.
-3. **Unreliable Single-Run Measurements**: System noise (background tasks, CPU boost states, cache variance, and counter quantization) makes single-run energy measurements misleading. 8DoTs employs statistical methods to quantify measurement confidence.
-4. **Runaway Processes**: Profiling tools often leave orphaned child processes running after a timeout, skewing results and wasting resources. 8DoTs enforces strict process-tree cleanup.
+The project aims to make energy efficiency a measurable part of software development.
 
-## Key Features
+**Our objective:**
 
-- **Direct RAPL Reads**: Dynamically discovers Linux powercap domains and accurately calculates energy deltas, including automatic mathematical correction for counter wraps.
-- **Thermal Context**: Samples CPU thermal zones to report baseline, peak, average, and ending temperatures, alongside heuristic throttling detection.
-- **Statistical Confidence**: Reports mean, standard deviation, and Coefficient of Variation (CoV) to label results as HIGH, MEDIUM, or LOW confidence.
-- **Sequential Execution**: Runs targets one at a time with robust timeout handling, process-group isolation, and survivor reporting to ensure clean attribution.
-- **Export Formats**: Outputs structured JSON and time-series CSV data for downstream analysis, archiving, and visualization.
-- **CI Energy Gates**: Compares pull request measurements against a saved baseline with a noise guard, preventing energy regressions from being merged.
+Help developers understand not only how fast their software runs, but also how much energy it consumes and whether it behaves efficiently under execution.
 
-## Quick Start
+---
 
-1. **Install system prerequisites**:
-   ```bash
-   sudo apt update
-   sudo apt install -y git python3 python3-venv python3-pip
-   ```
+## 2. The Problem That Inspired 8DoTs
 
-2. **Clone the repository**:
-   ```bash
-   git clone https://github.com/uyg7x/8DoTs.git
-   cd 8DoTs
-   ```
+Modern software development has traditionally prioritized performance.
 
-3. **Create and activate a virtual environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-   ```
+Developers optimize applications to:
+- Reduce execution time.
+- Minimize memory consumption.
+- Improve CPU utilization.
+- Increase application responsiveness.
 
-4. **Install the tool**:
-   ```bash
-   python -m pip install -e .
-   ```
+However, an important question often remains unanswered:
 
-5. **Fix RAPL permissions (if required)**:
-   If your system restricts access to powercap counters, apply this udev rule to make them readable. Review your local security policy before making hardware counters world-readable.
-   ```bash
-   sudo bash -c 'echo SUBSYSTEM=="powercap", MODE="0666" > /etc/udev/rules.d/99-rapl.rules'
-   sudo udevadm control --reload
-   sudo udevadm trigger
-   ```
+**How much energy does the software consume to perform its work?**
 
-6. **Verify your system readiness**:
-   ```bash
-   python -m dol8.cli doctor
-   ```
-   *(Note: You can also use the `dol8` command directly if the console script entry point was successfully added to your PATH during installation. If `dol8` is not found, prepend `python -m dol8.cli` to all commands).*
+This creates several problems.
 
-## Example Output
+### Problem 1: Invisible Energy Consumption
 
-When you run a profiled workload, 8DoTs provides a comprehensive, human-readable summary:
+Two programs can have identical execution times but significantly different energy consumption.
+
+Traditional performance profiling does not necessarily reveal this difference.
+
+**Our approach:** Measure hardware energy consumption using RAPL counters.
+
+### Problem 2: Silent Thermal Throttling
+
+When processors become too hot, they may reduce their operating frequency to control temperature.
+
+This can cause unexpected performance degradation.
+
+**Our approach:** Monitor CPU thermal information and report possible thermal throttling events.
+
+### Problem 3: Unreliable Measurements
+
+A single execution can produce misleading results because of:
+- Background processes.
+- CPU frequency variations.
+- Cache behavior.
+- System noise.
+- Hardware counter quantization.
+
+**Our approach:** Use repeated executions and statistical analysis to evaluate measurement consistency.
+
+### Problem 4: Runaway Processes
+
+A workload may run indefinitely or create child processes that continue running after a timeout.
+
+This wastes resources and can affect subsequent measurements.
+
+**Our approach:** Use process-group isolation, timeout handling, and process-tree cleanup.
+
+### Problem 5: Energy Regressions After Code Changes
+
+A new code implementation may perform the same task while consuming more energy.
+
+Traditional testing may not detect this regression.
+
+**Our approach:** Compare implementations and use CI energy gates to identify significant energy increases.
+
+---
+
+## 3. Our Solution
+
+8DoTs introduces an energy-aware software profiling workflow.
+
+It combines:
+
+1. Hardware-based energy measurement.
+2. Idle energy baseline correction.
+3. Controlled workload execution.
+4. CPU thermal monitoring.
+5. Statistical confidence analysis.
+6. Energy and power calculations.
+7. A/B implementation comparison.
+8. Automated CI energy regression checks.
+9. JSON and CSV reporting.
+10. Optional electricity cost and carbon-impact estimation.
+
+Instead of treating execution time as the only indicator of software performance, 8DoTs introduces energy consumption as another important measurement.
+
+---
+
+## 4. System Architecture
+
+```mermaid
+flowchart TD
+    A["Developer / User"] --> B["CLI Interface"]
+
+    B --> C["Measurement Engine"]
+
+    C --> D["Idle Baseline Measurement"]
+    D --> E["Warm-up Execution"]
+    E --> F["Repeated Workload Execution"]
+
+    F --> G["RAPL Energy Reader"]
+    F --> H["Thermal Monitoring"]
+    F --> I["Process Management"]
+
+    G --> J["Analysis Engine"]
+    H --> J
+    I --> J
+
+    J --> K["Energy Calculation"]
+    K --> L["Statistical Analysis"]
+
+    L --> M["Reporting Engine"]
+
+    M --> N["Terminal Report"]
+    M --> O["JSON Export"]
+    M --> P["CSV Export"]
+
+    M --> Q["A/B Comparison"]
+    M --> R["CI Energy Gates"]
+
+    Q --> S["Developer Optimization"]
+    R --> S
+```
+
+### Architecture Explanation
+
+| Layer | Responsibility |
+|---|---|
+| CLI Interface | Accepts user commands and profiling parameters. |
+| Measurement Engine | Controls baseline, warm-up, and repeated executions. |
+| RAPL Reader | Reads hardware energy counters through Linux Powercap. |
+| Thermal Monitor | Collects CPU temperature information. |
+| Process Manager | Handles execution, timeouts, and process cleanup. |
+| Analysis Engine | Calculates energy consumption and power. |
+| Statistical Engine | Evaluates measurement consistency. |
+| Comparison Engine | Compares different implementations. |
+| CI Energy Gate | Detects energy regressions against saved baselines. |
+| Reporting Engine | Produces terminal, JSON, and CSV reports. |
+
+---
+
+## 5. Core Modules
+
+### 5.1 Energy Measurement Module
+
+Uses Linux RAPL/Powercap interfaces to read hardware energy counters.
+
+Responsibilities:
+- Discover available energy domains.
+- Read energy counter values.
+- Calculate energy differences.
+- Handle counter wraparound.
+- Convert measurements into joules.
+
+### 5.2 Baseline Measurement Module
+
+Measures idle system energy before workload execution.
+
+Its purpose is to account for background energy consumption during the measurement window.
+
+### 5.3 Workload Execution Module
+
+Executes the target program in a controlled environment.
+
+Responsibilities:
+- Sequential workload execution.
+- Warm-up execution.
+- Repeated measurements.
+- Timeout handling.
+- Process-group isolation.
+- Child-process cleanup.
+
+### 5.4 Thermal Monitoring Module
+
+Reads CPU thermal information from Linux thermal interfaces.
+
+Reports:
+- Baseline temperature.
+- Average temperature.
+- Peak temperature.
+- Ending temperature.
+- Temperature rise.
+- Heuristic thermal throttling indicators.
+
+### 5.5 Statistical Analysis Module
+
+Repeated measurements are analyzed to understand their reliability.
+
+Metrics include:
+- Mean energy consumption.
+- Standard deviation.
+- Coefficient of Variation (CoV).
+- Measurement confidence classification.
+
+Results are classified as HIGH, MEDIUM, or LOW confidence.
+
+### 5.6 Comparison Module
+
+Allows developers to compare two implementations using A/B measurements.
+
+Example:
+
+```bash
+python -m dol8.cli compare before.py after.py --runs 5
+```
+
+This helps identify whether a code change improves or increases energy consumption.
+
+### 5.7 CI Energy Gate Module
+
+Allows energy regression checks in development workflows.
+
+A saved baseline can be used to evaluate subsequent executions.
+
+Example:
+
+```bash
+python -m dol8.cli gate save result.json --out baseline.json
+```
+
+Run a workload against the baseline:
+
+```bash
+python -m dol8.cli run new_workload.py \
+  --runs 5 \
+  --gate-baseline baseline.json \
+  --threshold 15
+```
+
+The gate uses a noise guard and statistical significance checks before reporting a regression.
+
+### 5.8 Reporting Module
+
+Generates structured profiling reports.
+
+Supported output formats:
+- Terminal output.
+- JSON.
+- CSV time-series data.
+
+Reports can also include optional electricity-cost and CO2 estimates.
+
+---
+
+## 6. How 8DoTs Works
+
+The measurement workflow follows these stages:
+
+**Stage 1 — System Readiness**
+
+Checks hardware availability and access to required Linux interfaces.
+
+**Stage 2 — Baseline Measurement**
+
+Measures idle system energy before running the workload.
+
+**Stage 3 — Warm-up**
+
+Executes the workload once to reduce initial execution variability.
+
+**Stage 4 — Repeated Execution**
+
+Runs the workload sequentially for the requested number of repetitions.
+
+**Stage 5 — Energy Collection**
+
+Captures start and end hardware energy counter readings.
+
+**Stage 6 — Calculation**
+
+Calculates energy differences, applies idle baseline correction, and derives power metrics.
+
+**Stage 7 — Statistical Analysis**
+
+Evaluates measurement consistency using repeated observations.
+
+**Stage 8 — Reporting**
+
+Generates the final energy and thermal report.
+
+---
+
+## 7. Key Features
+
+| Feature | Purpose |
+|---|---|
+| RAPL Energy Measurement | Hardware-based energy readings. |
+| Counter Wraparound Correction | Handles hardware counter overflow. |
+| Idle Baseline Correction | Accounts for background energy. |
+| Thermal Monitoring | Provides CPU thermal context. |
+| Statistical Confidence | Evaluates measurement reliability. |
+| Process Isolation | Prevents uncontrolled workload execution. |
+| Timeout Handling | Controls long-running workloads. |
+| A/B Comparison | Compares implementation efficiency. |
+| CI Energy Gates | Helps prevent energy regressions. |
+| JSON Export | Enables structured analysis. |
+| CSV Export | Enables time-series analysis. |
+| Cost Estimation | Estimates electricity expenses. |
+| CO2 Estimation | Estimates associated carbon impact. |
+
+---
+
+## 8. Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Core application implementation. |
+| Linux | Hardware measurement environment. |
+| RAPL / Powercap | Hardware energy counters. |
+| Linux Thermal Interfaces | Temperature monitoring. |
+| psutil | Process and system information. |
+| pytest | Automated testing. |
+| JSON | Structured report generation. |
+| CSV | Measurement data export. |
+| GitHub Actions / CI | Automated development workflows. |
+
+---
+
+## 9. Requirements
+
+### Supported Environment
+
+- Bare-metal Linux.
+- Python 3.9 or higher.
+- Intel or AMD hardware exposing supported RAPL counters through Linux Powercap.
+- Appropriate permissions to access hardware energy counters.
+
+### Unsupported Environments
+
+- Windows hardware profiling.
+- macOS hardware profiling.
+- Virtual machines without exposed physical energy counters.
+- WSL2 hardware energy profiling.
+
+The automated test suite can still run in environments where hardware energy profiling is unavailable.
+
+---
+
+## 10. Installation
+
+### Step 1 — Clone the Repository
+
+```bash
+git clone https://github.com/vikas468368-star/8DoTs.git
+
+cd 8DoTs
+```
+
+### Step 2 — Create a Virtual Environment
+
+```bash
+python3 -m venv .venv
+
+source .venv/bin/activate
+```
+
+### Step 3 — Upgrade pip
+
+```bash
+python -m pip install --upgrade pip
+```
+
+### Step 4 — Install Dependencies
+
+```bash
+python -m pip install -e ".[test]"
+```
+
+### Step 5 — Check System Readiness
+
+```bash
+python -m dol8.cli doctor
+```
+
+---
+
+## 11. Usage
+
+### Profile a Python Workload
+
+```bash
+python -m dol8.cli run workload.py --runs 5
+```
+
+### Execute With a Timeout
+
+```bash
+python -m dol8.cli run workload.py --timeout 120 --runs 3
+```
+
+### Export Results to JSON
+
+```bash
+python -m dol8.cli run workload.py \
+  --runs 5 \
+  --json results.json
+```
+
+### Compare Two Implementations
+
+```bash
+python -m dol8.cli compare before.py after.py --runs 5
+```
+
+### Save an Energy Baseline
+
+```bash
+python -m dol8.cli gate save result.json --out baseline.json
+```
+
+### Run Automated Tests
+
+```bash
+python -m pytest
+```
+
+---
+
+## 12. Example Output
 
 ```text
 ===== DoL8 REPORT (HIGH-RESOLUTION ESTIMATE) =====
+
 Target: workload.py
-CPU/OS: AMD Ryzen 5 3500U with Radeon Vega Mobile Gfx / Linux
+
 TIME: 2.099s (+- 0.044s)
-ENERGY: 12.292 J (0.00000341 kWh); baseline removed 20.789 J
-  PACKAGE: 12.292 J [####################] 100.0%
-POWER: avg 5.857 W, peak 18.960 W
-THERMAL: baseline 60.3 C, peak 60.6 C, avg 60.2 C, end 60.5 C, rise 0.3 C
-THROTTLING: no
-CONFIDENCE: 3 runs, mean 12.292 J +- 0.167 J, CoV 1.36%, HIGH
-ECONOMICS: $0.00000041 per run, $0.0150 per year (at $0.15/kWh)
-CO2: 0.002 g per SCI-aligned estimation (at 0.45 kg/kWh)
+
+ENERGY: 12.292 J
+
+POWER:
+  Average: 5.857 W
+  Peak:    18.960 W
+
+THERMAL:
+  Baseline: 60.3 C
+  Peak:     60.6 C
+  Average:  60.2 C
+  End:      60.5 C
+
+THROTTLING: No
+
+CONFIDENCE:
+  Runs: 3
+  Mean: 12.292 J
+  CoV:  1.36%
+  Level: HIGH
 ```
 
-## How It Works
+*Illustrative output from the project documentation.*
 
-8DoTs operates on a rigorous measurement contract:
-1. **Baseline**: Measures idle system energy for a short duration (default 5 seconds).
-2. **Warm-up**: Executes the target once and discards the measurement to stabilize CPU frequency and cache states.
-3. **Measurement**: Runs the target sequentially for a specified number of runs, capturing start and end RAPL counter values.
-4. **Calculation**: Computes the energy delta in joules, adjusts for idle consumption, and calculates average and peak power.
-5. **Reporting**: Outputs a comprehensive summary including thermal data, statistical confidence, and optional cost or CO2 estimates (configured via `--price` for cost per kWh and `--grid-factor` for CO2 emissions per kWh).
+---
 
-## Using the CLI in Workflows
+## 13. Limitations and Engineering Considerations
 
-8DoTs is designed to integrate seamlessly into development and CI/CD workflows. 
+We believe transparent measurement is important.
 
-1. **Preventing Runaway Process and Timeout Issues**:  
-   Use the built-in timeout feature to prevent hung workloads from consuming indefinite energy.  
-   ```bash
-   python -m dol8.cli run workload.py --timeout 120 --runs 3
-   ```  
-   The tool isolates the target in a new POSIX process group. If the timeout is reached, it gracefully terminates the entire process tree, preventing orphaned processes from skewing subsequent measurements.
+### Hardware Dependency
 
-2. **Eliminating Measurement Noise**:  
-   Never rely on a single run for performance claims. Use the `--runs` and `--warmup` flags to ensure statistical validity.  
-   ```bash
-   python -m dol8.cli run workload.py --runs 5 --warmup 1 --json results.json
-   ```  
+RAPL availability depends on CPU architecture and Linux hardware interfaces.
 
-3. **Automating Energy Regression Prevention (CI Gates)**:  
-   To prevent code changes from silently increasing energy consumption, save a baseline and enforce it in your CI pipeline.  
-   ```bash
-   # Save a known-good baseline
-   python -m dol8.cli gate save result.json --out baseline.json
-   
-   # Enforce in CI (fails only if increase is >15% AND statistically significant)
-   python -m dol8.cli run new_workload.py --runs 5 --gate-baseline baseline.json --threshold 15
-   ```  
+**Consideration:** Use a supported bare-metal Linux system.
 
-4. **Comparing Two Implementations**:  
-   Use the compare command to run alternating A/B tests with fresh baselines for each observation.
-   ```bash
-   python -m dol8.cli compare before.py after.py --runs 5 --json compare.json
-   ```
+### Energy Attribution
 
-## Future Vision
+RAPL measures energy at hardware domain level, not exact individual-process energy.
 
-As software systems grow, so does their computational carbon footprint. 8DoTs is building toward a future where energy efficiency is a first-class citizen in software quality assurance. Upcoming and evolving capabilities include:
+**Consideration:** Use a dedicated and relatively idle machine for more reliable estimates.
 
-- **Enhanced Resource Tracking**: Correlating energy spikes with specific file I/O or memory allocation patterns to help developers optimize storage and memory efficiency, reducing unnecessary file writes and memory bloat.
-- **Broader Hardware Support**: Expanding beyond CPU RAPL to include detailed GPU and specialized accelerator energy profiling for machine learning and high-performance computing workloads.
-- **Refined Watch Mode**: Improving the experimental `python -m dol8.cli watch` command, which currently provides an ESTIMATED, CPU-time-prorated energy share for running processes, to offer more granular real-time machine observation.
+### System Noise
 
-## Limitations, Honesty, and Solutions
+Background workloads can influence measurements.
 
-We believe in transparent engineering. Below are the current limitations of the tool and the practical solutions to work around them.
+**Consideration:** Use repeated executions and statistical confidence metrics.
 
-1. **Limitation: Platform Restriction**  
-   *Issue*: Profiling requires bare-metal Linux. Windows and macOS do not expose the required RAPL interfaces.  
-   *Solution*: For cross-platform development teams, designate a dedicated bare-metal Linux machine or a Linux CI runner specifically for energy profiling. The 8DoTs codebase can still be developed and tested on any OS using the mocked test suite.
+### Environmental Variation
 
-2. **Limitation: Estimation, Not Exact Process Attribution**  
-   *Issue*: RAPL measures energy at the CPU socket or domain level, not per individual process. It cannot perfectly isolate a single process in a multi-tenant environment.  
-   *Solution*: To maximize attribution accuracy, run 8DoTs on a dedicated, idle machine. Use the `--runs` flag to average out background noise. Disable unnecessary background services, network activity, and desktop environments during the measurement window.
+Cooling, ambient temperature, CPU frequency and hardware differences can influence results.
 
-3. **Limitation: Hardware and Environmental Variance**  
-   *Issue*: Results are influenced by the specific CPU model, cooling solution, ambient temperature, and background system state.  
-   *Solution*: Always perform A/B comparisons on the exact same physical machine under consistent environmental conditions. Rely on the built-in statistical confidence metrics (CoV). If the confidence is labeled "LOW," increase the number of runs or investigate background system interference.
+**Consideration:** Perform A/B comparisons on the same machine under consistent conditions.
 
-## How to Contribute
+---
 
-We welcome contributions from the community to make 8DoTs more robust, accurate, and useful. 
+## 14. Future Scope
 
-### Getting Started
-1. **Fork the Repository**: Create your own fork of the 8DoTs repository on GitHub.
-2. **Clone and Setup**: Clone your fork locally and set up the development environment with test dependencies:
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/8DoTs.git
-   cd 8DoTs
-   python3 -m venv .venv
-   source .venv/bin/activate
-   python -m pip install -e ".[test]"
-   ```
-3. **Run the Test Suite**: Ensure all existing tests pass before making changes:
-   ```bash
-   python -m pytest
-   ```
+Potential development directions include:
 
-### Contribution Guidelines
-- **Code Style**: Follow the existing Python formatting and typing conventions used in the codebase.
-- **Testing**: Every new feature or bug fix must include corresponding tests. The project relies heavily on mocked `sysfs` and `psutil` interfaces in the `tests/` directory to ensure tests can run reliably without requiring specific physical hardware.
-- **Documentation**: Update the relevant documentation files in the `docs/` directory and this README if your change alters user-facing behavior or CLI arguments.
-- **Pull Requests**: Submit a Pull Request with a clear, descriptive title. Explain the problem you are solving, the approach you took, and how to verify the changes.
+- Enhanced GPU and accelerator energy measurement.
+- More detailed resource-to-energy correlation.
+- Improved real-time monitoring.
+- Enhanced visualization and analytics.
+- Better support for additional hardware platforms.
+- Expanded CI/CD integrations.
+- More advanced energy regression analysis.
+- Real-world energy optimization case studies.
 
-### Areas We Need Help With
-- Expanding support for additional thermal sensor families or battery APIs.
-- Improving the granularity of the CSV timeline exports.
-- Enhancing the `watch` mode for better real-time process estimation.
-- Writing tutorials or case studies demonstrating energy optimization in real-world applications.
+---
 
-## License
+## 15. Why 8DoTs Matters
 
-MIT License.
+8DoTs explores an important direction in modern software engineering: sustainable software development.
+
+Software quality should not be evaluated only through execution speed or resource utilization.
+
+Energy consumption is another important dimension.
+
+By making energy measurements accessible to developers, 8DoTs encourages more informed engineering decisions and promotes energy-aware development practices.
+
+**Our vision is simple: Make energy efficiency measurable, understandable, and actionable.**
+
+---
+
+## 16. Contributing
+
+Contributions are welcome.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Implement your changes.
+4. Add or update tests.
+5. Run the test suite.
+6. Submit a pull request.
+
+```bash
+python -m pytest
+```
+
+Please include a clear description of the problem, implementation and verification steps.
+
+---
+
+## 17. License
+
+This project is distributed under the MIT License.
+
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 18. Acknowledgements
+
+8DoTs is maintained in this repository as a fork of the original project:
+
+[uyg7x/8DoTs](https://github.com/uyg7x/8DoTs)
+
+Credit for upstream work belongs to the original project and its contributors. Changes and additional contributions in this fork should be documented through the repository's commit history.
+
+---
+
+<p align="center">
+  <strong>8DoTs</strong>
+  <br />
+  Measure Beyond Time. Build Beyond Performance.
+</p>
